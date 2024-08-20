@@ -1,0 +1,54 @@
+# Copyright 2024 Canonical, Ltd.
+# See LICENSE file for licensing details
+
+name: mutating-pebble-webhook
+summary: mutating-pebble-webhook rock
+description: |
+    A rock containing the Pebble Mutating Webhook.
+
+    Pebble needs to be able to write in the $PEBBLE folder (/var/lib/pebble/default
+    by default) in order to write its state file and a few other files. However,
+    there are scenarios in which Pods are deployed with readOnlyRootFilesystem
+    SecurityContext, blocking Pebble from writing its state file.
+
+    This admission webhook for Kubernetes Pods will add an empty dir volume for
+    containers with `readOnlyRootFilesystem=true` containers for Pebble to write in,
+    and set / amend the `$PEBBLE` and `$PEBBLE_COPY_ONCE` environment variables
+    appropriately.
+license: Apache-2.0
+version: 0.0.1
+
+base: ubuntu@22.04
+build-base: ubuntu@22.04
+run-user: _daemon_
+
+platforms:
+  amd64:
+  arm64:
+
+environment:
+  APP_VERSION: 0.0.1
+
+# Services to be loaded by the Pebble entrypoint.
+services:
+  mutating-pebble-webhook:
+    summary: "mutating-pebble-webhook service"
+    override: replace
+    startup: enabled
+    command: "/mutating-pebble-webhook"
+    on-success: shutdown
+    on-failure: shutdown
+
+parts:
+  build-mutating-pebble-webhook:
+    plugin: go
+    source: .
+    build-snaps:
+      - go/1.23/stable
+    build-environment:
+      - GOOS: linux
+      - GOARCH: $CRAFT_ARCH_BUILD_FOR
+    go-generate:
+      - ./cmd
+    organize:
+      bin/cmd: ./mutating-pebble-webhook
