@@ -15,6 +15,6 @@ def test_mutating_pebble_webhook_rock():
 
     process = docker_util.run_in_docker(image, ["/mutating-pebble-webhook"], False)
     expected_err = (
-        "Expected file to exist, but doesn't: '/etc/admission-webhook/tls/tls.crt"
+        "Expected file to exist, but doesn't. path=/etc/admission-webhook/tls/tls.crt"
     )
     assert expected_err in process.stderr
