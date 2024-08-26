@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-mixed
+spec:
+  containers:
+  - name: test-normal
+    image: busybox:1.28
+    command: ["sleep", "3600"]
+  - name: test-readonly
+    image: busybox:1.28
+    command: ["sleep", "3600"]
+    securityContext:
+      readOnlyRootFilesystem: true
