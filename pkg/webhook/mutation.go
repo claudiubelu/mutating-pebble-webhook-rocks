@@ -28,32 +28,32 @@ import (
 )
 
 const (
-	PEBBLE_ENV_VAR_NAME           string = "PEBBLE"
-	PEBBLE_ENV_COPY_ONCE_VAR_NAME string = "PEBBLE_COPY_ONCE"
-	PEBBLE_DEFAULT_PATH           string = "/var/lib/pebble/default"
-	PEBBLE_WRITABLE_SUBPATH       string = "writable"
+	pebbleEnvVarName         string = "PEBBLE"
+	pebbleEnvCopyOnceVarName string = "PEBBLE_COPY_ONCE"
+	pebbleDefaultPath        string = "/var/lib/pebble/default"
+	pebbleWritableSubpath    string = "writable"
 
 	// Patch paths.
-	CONTAINER_VOLUME_MOUNT_PATH string = "/spec/containers/%d/volumeMounts/-"
-	CONTAINER_ENV_PATH          string = "/spec/containers/%d/env%s"
-	POD_VOLUME_PATH             string = "/spec/volumes/-"
+	containerVolumeMountPath string = "/spec/containers/%d/volumeMounts/-"
+	containerEnvPath         string = "/spec/containers/%d/env%s"
+	podVolumePath            string = "/spec/volumes/-"
 )
 
 func getContainerEnvPatchOps(container corev1.Container, currentPath, mountPath string, containerIndex int) []jsonpatch.Operation {
 	envs := []corev1.EnvVar{
-		corev1.EnvVar{
-			Name:  PEBBLE_ENV_VAR_NAME,
+		{
+			Name:  pebbleEnvVarName,
 			Value: mountPath,
 		},
-		corev1.EnvVar{
-			Name:  PEBBLE_ENV_COPY_ONCE_VAR_NAME,
+		{
+			Name:  pebbleEnvCopyOnceVarName,
 			Value: currentPath,
 		},
 	}
 
 	// If the container has no Env at all, we need to create it as well.
 	if container.Env == nil {
-		patchPath := fmt.Sprintf(CONTAINER_ENV_PATH, containerIndex, "")
+		patchPath := fmt.Sprintf(containerEnvPath, containerIndex, "")
 		return []jsonpatch.Operation{jsonpatch.NewPatch("add", patchPath, envs)}
 	}
 
@@ -61,13 +61,13 @@ func getContainerEnvPatchOps(container corev1.Container, currentPath, mountPath 
 
 	for _, env := range envs {
 		if index := findEnvVar(container, env.Name); index != -1 {
-			patchPath := fmt.Sprintf(CONTAINER_ENV_PATH, containerIndex, fmt.Sprintf("/%d", index))
+			patchPath := fmt.Sprintf(containerEnvPath, containerIndex, fmt.Sprintf("/%d", index))
 			ops = append(ops, jsonpatch.NewPatch("replace", patchPath, env))
 			continue
 		}
 
 		// The env var doesn't exist, add it.
-		patchPath := fmt.Sprintf(CONTAINER_ENV_PATH, containerIndex, "/-")
+		patchPath := fmt.Sprintf(containerEnvPath, containerIndex, "/-")
 		ops = append(ops, jsonpatch.NewPatch("add", patchPath, env))
 	}
 
@@ -104,11 +104,11 @@ func findEnvVar(container corev1.Container, varName string) int {
 
 // Get the configured $PEBBLE path env variable, if any. If not, return the default $PEBBLE path.
 func getContainerPebblePath(container corev1.Container) string {
-	if index := findEnvVar(container, PEBBLE_ENV_VAR_NAME); index != -1 {
+	if index := findEnvVar(container, pebbleEnvVarName); index != -1 {
 		return container.Env[index].Value
 	}
 
-	return PEBBLE_DEFAULT_PATH
+	return pebbleDefaultPath
 }
 
 func containerNeedsPebbleVolume(container corev1.Container) bool {
@@ -145,11 +145,11 @@ func getPebbleVolumeMountPatches(pod *corev1.Pod) []jsonpatch.Operation {
 		// The layers folder exists in the $PEBBLE path. This means we can't mount there, as
 		// that will cause the layers folder to no longer exists in the $PEBBLE path.
 		// Instead, we should mount in a subfolder, and set the $PEBBLE and $PEBBLE_READ_ONCE env vars.
-		mountPath := filepath.Join(pebblePath, PEBBLE_WRITABLE_SUBPATH)
+		mountPath := filepath.Join(pebblePath, pebbleWritableSubpath)
 
 		// Add volume patch to the current container.
 		// The subpath is required if there are multiple rocks in the same Pod.
-		patches = append(patches, jsonpatch.NewPatch("add", fmt.Sprintf(CONTAINER_VOLUME_MOUNT_PATH, i),
+		patches = append(patches, jsonpatch.NewPatch("add", fmt.Sprintf(containerVolumeMountPath, i),
 			corev1.VolumeMount{
 				Name:      "pebble-dir",
 				MountPath: mountPath,
@@ -169,7 +169,7 @@ func getPebbleVolumeMountPatches(pod *corev1.Pod) []jsonpatch.Operation {
 	}
 
 	// Add patch for Pebble volume.
-	patches = append(patches, jsonpatch.NewPatch("add", POD_VOLUME_PATH,
+	patches = append(patches, jsonpatch.NewPatch("add", podVolumePath,
 		corev1.Volume{
 			Name:         "pebble-dir",
 			VolumeSource: corev1.VolumeSource{EmptyDir: &corev1.EmptyDirVolumeSource{}},

@@ -104,7 +104,7 @@ func ServeAddPebbleMount(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func ServeHealthz(w http.ResponseWriter, req *http.Request) {
+func ServeHealthz(w http.ResponseWriter, _ *http.Request) {
 	slog.Debug("Healthy")
 	if _, err := w.Write([]byte("OK")); err != nil {
 		slog.Error("Encountered error while reporting health.", "error", err)

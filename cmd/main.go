@@ -17,10 +17,12 @@ limitations under the License.
 package main
 
 import (
+	"crypto/tls"
 	"errors"
 	"log/slog"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/canonical/mutating-pebble-webhook-rock/pkg/webhook"
 )
@@ -55,11 +57,26 @@ func main() {
 	ensureFile(cert)
 	ensureFile(key)
 
+	tlsCertif, err := tls.LoadX509KeyPair(cert, key)
+	if err != nil {
+		slog.Error("Encountered error while loading certificate.", "error", err)
+		panic(err)
+	}
+
+	server := &http.Server{
+		Addr:              ":8443",
+		ReadHeaderTimeout: 5 * time.Second,
+		TLSConfig: &tls.Config{
+			Certificates: []tls.Certificate{tlsCertif},
+			MinVersion:   tls.VersionTLS12,
+		},
+	}
+
 	http.HandleFunc("/add-pebble-mount", webhook.ServeAddPebbleMount)
 	http.HandleFunc("/healthz", webhook.ServeHealthz)
 
 	slog.Info("Listening connections...")
-	err := http.ListenAndServeTLS(":8443", cert, key, nil)
+	err = server.ListenAndServeTLS("", "")
 	if err != nil {
 		slog.Error("Encountered error.", "error", err)
 		panic(err)
