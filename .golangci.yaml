@@ -1,0 +1,28 @@
+output:
+  print-linter-name: true
+
+linters:
+  # Some linters are already enabled by default, no need to explicitly add them here.
+  # https://golangci-lint.run/usage/linters#enabled-by-default
+  enable:
+    # bugs / errors
+    - dupl
+    - gosec
+    - revive
+
+    # performance
+    - gocritic
+    - prealloc
+
+    # style, formatting
+    - goconst
+    - gofmt
+    - stylecheck
+    - tagliatelle
+
+linters-settings:
+  errcheck:
+    # Report about not checking of errors in type assertions: `a := b.(MyStruct)`.
+    # Such cases aren't reported by default.
+    # Default: false
+    check-type-assertions: true
