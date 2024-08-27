@@ -42,25 +42,27 @@ func deserializeRequest(req *http.Request) (*v1.AdmissionReview, error) {
 	}
 
 	buff := new(bytes.Buffer)
-	buff.ReadFrom(req.Body)
+	if _, err := buff.ReadFrom(req.Body); err != nil {
+		return nil, fmt.Errorf("couldn't read request body: %w", err)
+	}
 	body := buff.Bytes()
 
 	if len(body) == 0 {
-		return nil, fmt.Errorf("Empty admission request body")
+		return nil, fmt.Errorf("empty admission request body")
 	}
 
 	requestedReview := v1.AdmissionReview{}
 	_, gvk, err := deserializer.Decode(body, nil, &requestedReview)
 	if err != nil {
-		return nil, fmt.Errorf("Request could not be decoded: %v", err)
+		return nil, fmt.Errorf("request could not be decoded: %w", err)
 	}
 
 	if *gvk != v1.SchemeGroupVersion.WithKind("AdmissionReview") {
-		return nil, fmt.Errorf("Unsupported group version kind: %v", gvk)
+		return nil, fmt.Errorf("unsupported group version kind: %v", gvk)
 	}
 
 	if requestedReview.Request == nil {
-		return nil, fmt.Errorf("Invalid admission review: Request field is nil")
+		return nil, fmt.Errorf("invalid admission review: Request field is nil")
 	}
 
 	return &requestedReview, nil
@@ -72,14 +74,14 @@ func ServeAddPebbleMount(w http.ResponseWriter, req *http.Request) {
 
 	request, err := deserializeRequest(req)
 	if err != nil {
-		logger.Error("Encountered error while deserializing: %v", err)
+		logger.Error("Encountered error while deserializing.", "error", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	response, err := addPebbleMountMutation(request)
 	if err != nil {
-		logger.Error("Encountered error while processing request: %v", err)
+		logger.Error("Encountered error while processing request.", "error", err)
 		response = toV1AdmissionResponse(err)
 	}
 
@@ -88,23 +90,23 @@ func ServeAddPebbleMount(w http.ResponseWriter, req *http.Request) {
 	resp.Response = response
 	resp.Response.UID = request.Request.UID
 
-	logger.Info("Sending response: %v", resp)
+	logger.Info("Sending response.", "response", resp)
 	respBytes, err := json.Marshal(resp)
 	if err != nil {
-		logger.Error("Encountered error while marshaling response: %v", err)
+		logger.Error("Encountered error while marshaling response.", "error", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	if _, err := w.Write(respBytes); err != nil {
-		logger.Error("Encountered error while writing response: %v", err)
+		logger.Error("Encountered error while writing response.", "error", err)
 	}
 }
 
 func ServeHealthz(w http.ResponseWriter, req *http.Request) {
 	slog.Debug("Healthy")
 	if _, err := w.Write([]byte("OK")); err != nil {
-		slog.Error("Encountered error while reporting health: %v", err)
+		slog.Error("Encountered error while reporting health.", "error", err)
 	}
 }

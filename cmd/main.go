@@ -29,7 +29,7 @@ func initLogger() {
 	if lev := os.Getenv("LOG_LEVEL"); lev != "" {
 		var level slog.Level
 		if err := level.UnmarshalText([]byte(lev)); err != nil {
-			slog.Error("cannot set LOG_LEVEL to %q", lev)
+			slog.Error("cannot set LOG_LEVEL.", "level", lev)
 			panic(err)
 		}
 		slog.SetLogLoggerLevel(level)
@@ -38,10 +38,10 @@ func initLogger() {
 
 func ensureFile(path string) {
 	if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
-		slog.Error("Expected file to exist, but doesn't: '%s'", path)
+		slog.Error("Expected file to exist, but doesn't.", "path", path)
 		panic(err)
 	} else if err != nil {
-		slog.Error("Encountered error while checking file '%s'. Error: %v", path, err)
+		slog.Error("Encountered error while checking file.", "path", path, "error", err)
 		panic(err)
 	}
 }
@@ -61,7 +61,7 @@ func main() {
 	slog.Info("Listening connections...")
 	err := http.ListenAndServeTLS(":8443", cert, key, nil)
 	if err != nil {
-		slog.Error("Encountered error: %w", err)
+		slog.Error("Encountered error.", "error", err)
 		panic(err)
 	}
 }
