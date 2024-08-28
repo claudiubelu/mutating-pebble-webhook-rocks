@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mutating-pebble-webhook
+  namespace: pebble-webhook
+spec:
+  selector:
+    matchLabels:
+      app: mutating-pebble-webhook
+  template:
+    metadata:
+      labels:
+        app: mutating-pebble-webhook
+    spec:
+      containers:
+        - image: ghcr.io/canonical/mutating-pebble-webhook:0.0.1-ck0
+          imagePullPolicy: Always
+          name: mutating-pebble-webhook
+          volumeMounts:
+            - name: tls
+              mountPath: "/etc/admission-webhook/tls"
+              readOnly: true
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8443
+              scheme: HTTPS
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8443
+              scheme: HTTPS
+            initialDelaySeconds: 5
+            periodSeconds: 10
+      volumes:
+        - name: tls
+          secret:
+            secretName: mutating-pebble-webhook-tls
