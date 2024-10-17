@@ -18,7 +18,7 @@ description: |
 license: Apache-2.0
 version: 0.0.1
 
-base: ubuntu@22.04
+base: bare
 build-base: ubuntu@22.04
 run-user: _daemon_
 
@@ -47,6 +47,7 @@ parts:
     build-environment:
       - GOOS: linux
       - GOARCH: $CRAFT_ARCH_BUILD_FOR
+      - CGO_ENABLED: 0
     go-generate:
       - ./cmd
     organize:
