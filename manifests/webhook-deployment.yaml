@@ -13,7 +13,7 @@ spec:
         app: mutating-pebble-webhook
     spec:
       containers:
-        - image: ghcr.io/canonical/mutating-pebble-webhook:0.0.1-ck0
+        - image: ghcr.io/canonical/mutating-pebble-webhook:0.0.1
           imagePullPolicy: Always
           name: mutating-pebble-webhook
           volumeMounts:
