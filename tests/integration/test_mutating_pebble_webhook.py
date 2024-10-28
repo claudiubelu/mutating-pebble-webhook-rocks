@@ -82,6 +82,23 @@ def webhook_instance(module_instance: harness.Instance):
         module_instance, "mutating-pebble-webhook", "pebble-webhook"
     )
 
+    # Sanity check: make sure there isn't an error in Pebble that it couldn't start the service.
+    process = module_instance.exec(
+        [
+            "k8s",
+            "kubectl",
+            "logs",
+            "-n",
+            "pebble-webhook",
+            "deployment.apps/mutating-pebble-webhook",
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    assert '(Start service "mutating-pebble-webhook") failed' not in process.stdout
+
     yield module_instance
 
 
